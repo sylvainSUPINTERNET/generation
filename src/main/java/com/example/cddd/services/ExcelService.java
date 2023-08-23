@@ -51,6 +51,8 @@ public class ExcelService {
         // part number list
         List<UpstreamResponsePartNumberDto> partNumberList = new ArrayList<>();
         UpstreamResponsePartNumberDto partNumber1 = new UpstreamResponsePartNumberDto();
+        UpstreamResponsePartNumberDto partNumber2 = new UpstreamResponsePartNumberDto();
+
         partNumber1.setPartNumber("1938483");
         partNumber1.setBomSystem("CODEP");
         partNumber1.setLocalPrimaryDesignation("primary 1938483");
@@ -62,6 +64,18 @@ public class ExcelService {
         partNumber1.setVehicleMappingCodepWithEbom("6370,VF");
         partNumber1.setVehicleMappingCodepWithEnovia("6370,J4Uxx");
         partNumber1.setGcbFlapFromCodep(true);
+
+        partNumber2.setPartNumber("1938483XKEKE");
+        partNumber2.setBomSystem("CODEP");
+        partNumber2.setLocalPrimaryDesignation("primary 1938483");
+        partNumber2.setLocalSecondaryDesignation("primary 1938483XKEKE");
+        partNumber2.setMappedEbomPartNumber("XEAZEAEA");
+        partNumber2.setMappedCodepPartNumber("RRRRRR");
+        partNumber2.setMappedEnoviaPartNumber("AAAAAAA");
+        partNumber2.setSystemCreator("CODEP");
+        partNumber2.setVehicleMappingCodepWithEbom("6370,VF");
+        partNumber2.setVehicleMappingCodepWithEnovia("6370,J4Uxx");
+        partNumber2.setGcbFlapFromCodep(true);
 
         // extra info enovia
         UpstreamResponseExtraInfoFromEnoviaPartDto extraInfoFromEnoviaPartDto = new UpstreamResponseExtraInfoFromEnoviaPartDto();
@@ -119,73 +133,84 @@ public class ExcelService {
         partNumber1.setBomUsages(bomUsages);
 
         partNumberList.add(partNumber1);
+        partNumberList.add(partNumber2);
         mock.setPartNumberList(partNumberList);
 
         wb = writeSheet3Clean(wb, mock);
 
-        return saveWorkbook(wb, "C:\\Workspace\\cddd\\generated.xlsx");
+        // return saveWorkbook(, "C:\\Workspace\\cddd\\generated.xlsx");
+        return saveWorkbook(wb, "E:\\Workspace\\generation\\generated.xlsx");
     }
 
     private Workbook writeSheet3Clean(Workbook wb, UpstreamResponseDto upstreamResponseDto) {
         // Assuming sheet already exists at index 0. Otherwise, create a new one.
         Sheet sheet = wb.createSheet("sheet4");
-        
 
-        int currentRowNum = 0;
-        for ( int i = 0; i < upstreamResponseDto.getPartNumberList().size(); i++ ) {
-            currentRowNum++;
+        List<Integer> partNumberColumns = Arrays.asList(0,1,2,3,4,5,6,7,8,9);
+        List<Integer> bomUsageColumns = Arrays.asList(11,12,13,14);
 
-            Row currentRow;
-            if ( sheet.getRow(i) == null ) {
-                sheet.createRow(i);
-            }
-            currentRow = sheet.getRow(i);
+        int currentRow = 0;
+
+        for ( int i = 0; i < upstreamResponseDto.getPartNumberList().size(); i++) {
+           
+            System.out.println("Part number row " + currentRow); 
+            Row row = sheet.createRow(currentRow);
+
+            partNumberColumns.forEach( column -> {
+                row.createCell(column);
+            });
+
+            bomUsageColumns.forEach( column -> {
+                row.createCell(column);
+            });
 
             UpstreamResponsePartNumberDto partNumber = upstreamResponseDto.getPartNumberList().get(i);
+            row.getCell(0).setCellValue(partNumber.getPartNumber());
+            row.getCell(1).setCellValue(partNumber.getBomSystem());
+            // TODO other field part number
 
-            for ( int j = 0; j < 10; j++ ) {
-                Cell cell = currentRow.createCell(j);
+            if (partNumber.getBomUsages() != null) {
+                if ( !partNumber.getBomUsages().isEmpty() ) {
+                    
+                    int countExtraRowAdded = 0;
+                    for ( int x = 0; x < partNumber.getBomUsages().size(); x++) {
+                        // logic is we add one row for each bom usage, also means, we need to "pad" the extra line in part number side ( merge cells )
+                        UpstreamResponseBomUsagesDto bomUsage = partNumber.getBomUsages().get(x);
+                        
+                        if ( sheet.getRow(currentRow) == null ) {
+                            Row newRow = sheet.createRow(currentRow);
+                            countExtraRowAdded++;
+                            System.out.println("bom usage create new row " + currentRow);
+                            newRow.createCell(11);
+                            System.out.println("create 12 ");
+                            newRow.createCell(12);
+                            // TODO continue
+                        }
 
-                if ( j == 0 ) {
-                    cell.setCellValue(partNumber.getPartNumber());
-                } else if ( j == 1 ) {
-                    cell.setCellValue(partNumber.getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaIndexPsa());
-                } 
-                // TODO continue with basic value ...
-            }
-        
+                        System.out.println("--- bom usage row " + currentRow + " : " + bomUsage.getCode());
+                        sheet.getRow(currentRow).getCell(11).setCellValue(bomUsage.getCode());
+                        sheet.getRow(currentRow).getCell(12).setCellValue(bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaProductLineName());
+                            // TODO continue
 
-            int rowMergeInPartNumber = 0;
-            for ( int x = 0; x < upstreamResponseDto.getPartNumberList().get(i).getBomUsages().size(); x++ ) {
-                rowMergeInPartNumber += 1;
-                System.out.println("current " + currentRowNum);
-                System.out.println("to merge" + rowMergeInPartNumber);
-
-                UpstreamResponseBomUsagesDto bomUsage = upstreamResponseDto.getPartNumberList().get(i).getBomUsages().get(x);
-                for ( int y = 11; y < 13 ; y++ ) {
-                    Cell cell = currentRow.createCell(y);
-                    if ( y == 11 ) {
-                        cell.setCellValue(bomUsage.getCode());
-                    } else if ( y == 12 ) {
-                        cell.setCellValue(bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaProductLineName());
+                        currentRow++;
                     }
-                    // TODO continue
+
+                    // Merge part number section with extra row added by bom usage
+
+                    if ( countExtraRowAdded != 0 ) {
+                        for ( int y = 0; y < partNumberColumns.size(); y++) {
+                            sheet.addMergedRegion(new CellRangeAddress(i, i + countExtraRowAdded, y, y));
+                        }
+                    }
+
                 }
-
             }
-            System.out.println("In part number section merge de row " + currentRowNum + " à la row " + rowMergeInPartNumber );
-            sheet.addMergedRegion(new CellRangeAddress(currentRowNum-1, rowMergeInPartNumber -1, 0, 0));
 
-         
+            // currentRow++;
 
             
-            
-            // set basic value
-            // part number (key / value)
-            // si j'ai un tableau de bomUsage => il faudra compté le nombre de bomUsage trouvé et incrémenter le count qui correspond à la plage à merge un cran au dessus
-            // idem si bomUsage a plusieurs vomUsage => il faudra compté et le nombre obtenu correspond au à la zone a merge pour la partie bomUsage
         }
-
+    
 
 
         return wb;
