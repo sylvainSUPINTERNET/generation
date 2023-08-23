@@ -136,11 +136,87 @@ public class ExcelService {
         partNumberList.add(partNumber2);
         mock.setPartNumberList(partNumberList);
 
-        wb = writeSheet3Clean(wb, mock);
+        wb = writeSheet3CleanEz(wb, mock);
 
         // return saveWorkbook(, "C:\\Workspace\\cddd\\generated.xlsx");
         return saveWorkbook(wb, "E:\\Workspace\\generation\\generated.xlsx");
     }
+
+
+    private Workbook writeSheet3CleanEz(Workbook wb, UpstreamResponseDto upstreamResponseDto) {
+        Sheet sheet = wb.createSheet("sheet4");
+        List<Integer> partNumberColumns = Arrays.asList(0,1,2,3,4,5,6,7,8,9);
+        List<Integer> bomUsageColumns = Arrays.asList(11,12); // Assuming these columns for BOM usages
+    
+        int currentRow = 0;
+    
+        for (UpstreamResponsePartNumberDto partNumber : upstreamResponseDto.getPartNumberList()) {
+            
+            int partNumberStartRow = currentRow; 
+    
+            Row row = sheet.createRow(currentRow);
+            for (int column : partNumberColumns) {
+                row.createCell(column);
+            }
+            
+            row.getCell(0).setCellValue(partNumber.getPartNumber());
+            row.getCell(1).setCellValue(partNumber.getBomSystem());
+            // TODO: other part number fields
+    
+            if (partNumber.getBomUsages() != null && !partNumber.getBomUsages().isEmpty()) {
+                
+                for (UpstreamResponseBomUsagesDto bomUsage : partNumber.getBomUsages()) {
+                    
+                    int bomUsageStartRow = currentRow;  // Remember the starting row for this BOM usage
+    
+                    if (currentRow != partNumberStartRow) {  
+                        row = sheet.createRow(currentRow);
+                    }
+    
+                    row.createCell(11).setCellValue(bomUsage.getCode());
+                    row.createCell(12).setCellValue(bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaProductLineName());
+    
+                    // VOM usages
+                    if (bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaVOMList() != null &&
+                        !bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaVOMList().isEmpty()) {
+                        
+                        for (UpstreamResponseExtraInfoFromEnoviaVOMDto vomUsage : bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaVOMList()) {
+                            
+                            if (currentRow != bomUsageStartRow) {
+                                row = sheet.createRow(currentRow);
+                            }
+    
+                            row.createCell(14).setCellValue(vomUsage.getExtraInfoFromEnoviaVOMName());
+                            row.createCell(15).setCellValue(vomUsage.getExtraInfoFromEnoviaVOMDescription());
+                            
+                            currentRow++;
+                        }
+                    } else {
+                        currentRow++;
+                    }
+    
+                    // Merge cells for BOM usage columns if extra rows were added due to VOM usages
+                    if (bomUsageStartRow < currentRow - 1) {
+                        for (int column : bomUsageColumns) {
+                            sheet.addMergedRegion(new CellRangeAddress(bomUsageStartRow, currentRow - 1, column, column));
+                        }
+                    }
+                }
+            } else {
+                currentRow++;
+            }
+    
+            // Merge cells for part number columns if extra rows were added
+            if (partNumberStartRow < currentRow - 1) {
+                for (int column : partNumberColumns) {
+                    sheet.addMergedRegion(new CellRangeAddress(partNumberStartRow, currentRow - 1, column, column));
+                }
+            }
+        }
+    
+        return wb;
+    }
+    
 
     private Workbook writeSheet3Clean(Workbook wb, UpstreamResponseDto upstreamResponseDto) {
         // Assuming sheet already exists at index 0. Otherwise, create a new one.
@@ -171,9 +247,10 @@ public class ExcelService {
 
             if (partNumber.getBomUsages() != null) {
                 if ( !partNumber.getBomUsages().isEmpty() ) {
-                    
+
+                    // BOM USAGES
                     int countExtraRowAdded = 0;
-                    for ( int x = 0; x < partNumber.getBomUsages().size(); x++) {
+                    for ( int x = 0; x < partNumber.getBomUsages().size(); x++ ) {
                         // logic is we add one row for each bom usage, also means, we need to "pad" the extra line in part number side ( merge cells )
                         UpstreamResponseBomUsagesDto bomUsage = partNumber.getBomUsages().get(x);
                         
@@ -182,7 +259,6 @@ public class ExcelService {
                             countExtraRowAdded++;
                             System.out.println("bom usage create new row " + currentRow);
                             newRow.createCell(11);
-                            System.out.println("create 12 ");
                             newRow.createCell(12);
                             // TODO continue
                         }
@@ -192,16 +268,44 @@ public class ExcelService {
                         sheet.getRow(currentRow).getCell(12).setCellValue(bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaProductLineName());
                             // TODO continue
 
+                        // VOM
+                        if ( bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaVOMList() != null ) {
+
+                            if ( !bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaVOMList().isEmpty() ) {
+                                
+                                for ( int v = 0; v < bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaVOMList().size(); v++ ) {
+                                    System.out.println("----- VOM usage row" + currentRow);
+                                    UpstreamResponseExtraInfoFromEnoviaVOMDto vomUsage = partNumber.getBomUsages().get(x).getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaVOMList().get(v);
+                                    
+                                    if ( sheet.getRow(currentRow) == null ) {
+                                        Row newRow = sheet.createRow(currentRow);
+                                        countExtraRowAdded++;
+                                        System.out.println("VOM usage create new row " + currentRow);
+                                        newRow.createCell(14);
+                                        newRow.createCell(15);
+                                        // TODO continue
+                                    }
+                                    System.out.println("----- VOM usage row " + currentRow + " : " + vomUsage.getExtraInfoFromEnoviaVOMName());
+
+                                    sheet.getRow(currentRow).getCell(14).setCellValue(vomUsage.getExtraInfoFromEnoviaVOMName());
+                                    sheet.getRow(currentRow).getCell(15).setCellValue(vomUsage.getExtraInfoFromEnoviaVOMDescription());
+
+                                    // TODO
+                                }
+
+                            }
+                        }
+
                         currentRow++;
                     }
 
+                    //TODO à la fin on merge cellule pour vom / puis pour bom usage / puis part number
                     // Merge part number section with extra row added by bom usage
-
-                    if ( countExtraRowAdded != 0 ) {
-                        for ( int y = 0; y < partNumberColumns.size(); y++) {
-                            sheet.addMergedRegion(new CellRangeAddress(i, i + countExtraRowAdded, y, y));
-                        }
-                    }
+                    // if ( countExtraRowAdded != 0 ) {
+                    //     for ( int y = 0; y < partNumberColumns.size(); y++) {
+                    //         sheet.addMergedRegion(new CellRangeAddress(i, i + countExtraRowAdded, y, y));
+                    //     }
+                    // }
 
                 }
             }
