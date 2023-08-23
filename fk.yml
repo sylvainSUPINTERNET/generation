@@ -1,0 +1,237 @@
+openapi: 3.0.1
+info:
+  title: GCB WHERE-USED BACK
+  description: Description of Web Services exposed by GCB WHERE-USED for Upstream System.
+  license:
+    name: Stellantis
+    url: https://www.stellantis.com
+  version: 1.0.0
+servers:
+  - url: http://localhost:8082/api
+    description: Generated server url
+paths:
+  /callback:
+    post:
+      security:
+        - Authorization: []
+      tags:
+        - gcb-where-used-upstream-resources
+      summary: Procces a callback from Upstream System (contain the result for the Part Number list).
+      operationId: callback
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CallbackDto'
+        required: true
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Error
+components:
+  securitySchemes:
+    Authorization:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    CallbackDto:
+      type: object
+      properties:
+        reqId:
+          type: string
+          maxLength: 200
+          nullable: false
+        localSystem:
+          type: string
+          maxLength: 10
+          nullable: false
+          enum: [CODEP, EBOM, ENOVIA]
+          example : CODEP
+        status:
+          type: string
+          maxLength: 10
+          nullable: false
+          enum: [SUCCESS, FAILED]
+          example : SUCCESS
+        errorMessageList:
+          type: array
+          nullable: true
+          items:
+            type: string
+            maxLength: 5000
+            nullable: false
+            example : Part Number list not valid # error list must be defined
+        partNumberList:
+          type: array
+          nullable: false
+          items:
+            $ref: '#/components/schemas/PartNumberCallbackDto'
+    PartNumberCallbackDto:
+      type: object
+      properties:
+        partNumber:
+          type: string
+          maxLength: 10
+          nullable: false
+          example : 98414295VT
+        bomSystem:
+          type: string
+          maxLength: 10
+          nullable: false
+          enum: [CODEP, EBOM, ENOVIA]
+          example : CODEP
+        localPrimaryDesignation:
+          type: string
+          maxLength: 500
+          nullable: false
+        localSecondaryDesignation:
+          type: string
+          maxLength: 500
+          nullable: true
+        mappedEbomPartNumber:
+          type: string
+          maxLength: 20
+          nullable: true
+          example : 68095825AC
+        mappedCodepPartNumber:
+          type: string
+          maxLength: 20
+          nullable: true
+          example : 52206186
+        mappedEnoviaPartNumber:
+          type: string
+          maxLength: 20
+          nullable: true
+          example : 9812345680
+        systemCreator:
+          type: string
+          maxLength: 20
+          nullable: true
+          enum: [CODEP, EBOM, PSA]
+          example : CODEP
+        vehicleMappingCodepWithEbom:
+          type: string
+          maxLength: 200
+          nullable: true
+          example : 6370,VF
+        vehicleMappingCodepWithEnovia:
+          type: string
+          maxLength: 200
+          nullable: true
+          example : 6370,J4Uxx
+        gcbFlagFromCodep:
+          type: boolean
+          nullable: true
+        extraInfoFromEnoviaPartDto:
+          type: object
+          nullable: true
+          $ref: '#/components/schemas/ExtraInfoFromEnoviaPartDto'  
+        bomUsages:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/BOMUsagesDto'
+    ExtraInfoFromEnoviaPartDto:
+      type: object
+      properties:
+        extraInfoFromEnoviaIndexPsa:
+          type: string
+          maxLength: 10
+          nullable: true
+        extraInfoFromEnoviaPartType:
+          type: string
+          maxLength: 50
+          nullable: true
+        extraInfoFromEnoviaPartName:
+          type: string
+          maxLength: 200
+          nullable: true
+          example : A-00421462-01
+        extraInfoFromEnoviaPartRevision:
+          type: string
+          maxLength: 10
+          nullable: true
+        extraInfoFromEnoviaDecPSA:
+          type: string
+          maxLength: 20
+          nullable: true
+        extraInfoFromEnoviaProductNature:
+          type: string
+          maxLength: 200
+          nullable: true
+        extraInfoFromEnoviaLaunchProjectName:
+          type: string
+          maxLength: 50
+          nullable: true
+        extraInfoFromEnoviaPdefFromPrea:
+          type: string
+          maxLength: 5000
+          nullable: true
+        extraInfoFromEnoviaPreaFromPdef:
+          type: string
+          maxLength: 5000
+          nullable: true
+        extraInfoFromEnoviaPdefBomAssembly:
+          type: string
+          maxLength: 10
+          nullable: true
+        extraInfoFromEnoviaPdefBomComponent:
+          type: string
+          maxLength: 10
+          nullable: true
+    BOMUsagesDto:
+      type: object
+      properties:
+        code:
+          type: string
+          maxLength: 10
+          nullable: false
+          example : 6370
+        description:
+          type: string
+          maxLength: 2000
+          nullable: true
+          example : DODGE RAM 
+        extraInfoFromEnoviaBOMUsage:
+          type: object
+          nullable: true
+          $ref: '#/components/schemas/ExtraInfoFromEnoviaBOMUsageDto'  
+    ExtraInfoFromEnoviaBOMUsageDto:
+        type: object
+        properties:
+            extraInfoFromEnoviaProductLineName:
+              type: string
+              maxLength: 200
+              nullable: true
+            extraInfoFromEnoviaBOC:
+              type: string
+              maxLength: 200
+              nullable: true
+            extraInfoFromEnoviaVOMList:
+              type: array
+              nullable: true
+              items:
+                $ref: '#/components/schemas/ExtraInfoFromEnoviaVOMDto'          
+    ExtraInfoFromEnoviaVOMDto:
+        type: object
+        properties:
+            extraInfoFromEnoviaVOMName:
+              type: string
+              maxLength: 200
+              nullable: true
+            extraInfoFromEnoviaVOMDescription:
+              type: string
+              maxLength: 2000
+              nullable: true
+            extraInfoFromEnoviaVOMPlantName:
+              type: string
+              maxLength: 50
+              nullable: true
