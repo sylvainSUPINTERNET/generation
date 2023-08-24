@@ -9,10 +9,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.poi.sl.usermodel.VerticalAlignment;
+import javax.swing.GroupLayout.Alignment;
+
+import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
@@ -86,11 +89,25 @@ public class ExcelService {
         extraInfoFromEnoviaPartDto.setExtraInfoFromEnoviaDecPSA("DECPSA");
         extraInfoFromEnoviaPartDto.setExtraInfoFromEnoviaProductNature("NATURE");
         extraInfoFromEnoviaPartDto.setExtraInfoFromEnoviaLaunchProjectName("project name");
-        extraInfoFromEnoviaPartDto.setExtraInfoFromEnoviaPreaFromPdef("PREA from DEF");
-        extraInfoFromEnoviaPartDto.setExtraInfoFromEnoviaPdefFromPrea("PDF from PREA");
+        extraInfoFromEnoviaPartDto.setExtraInfoFromEnoviaPreaFromPdef("A-00005561-00 19861157580 00");
+        extraInfoFromEnoviaPartDto.setExtraInfoFromEnoviaPdefFromPrea("B-00002932919 (3) 	9851416280 02B-00003331120 (2) 	9811223380 02");
         extraInfoFromEnoviaPartDto.setExtraInfoFromEnoviaPdefBomAssembly("true");
         extraInfoFromEnoviaPartDto.setExtraInfoFromEnoviaPdefBomAssembly("true");
         partNumber1.setExtraInfoFromEnoviaPartDto(extraInfoFromEnoviaPartDto);
+
+        UpstreamResponseExtraInfoFromEnoviaPartDto extraInfoFromEnoviaPartDto2 = new UpstreamResponseExtraInfoFromEnoviaPartDto();
+        extraInfoFromEnoviaPartDto2.setExtraInfoFromEnoviaIndexPsa("01");
+        extraInfoFromEnoviaPartDto2.setExtraInfoFromEnoviaPartType("Mecanique");
+        extraInfoFromEnoviaPartDto2.setExtraInfoFromEnoviaPartName("B-xxxxxx");
+        extraInfoFromEnoviaPartDto2.setExtraInfoFromEnoviaPartRevision("1");
+        extraInfoFromEnoviaPartDto2.setExtraInfoFromEnoviaDecPSA("DECPSA");
+        extraInfoFromEnoviaPartDto2.setExtraInfoFromEnoviaProductNature("NATUREX");
+        extraInfoFromEnoviaPartDto2.setExtraInfoFromEnoviaLaunchProjectName("project name CB");
+        extraInfoFromEnoviaPartDto2.setExtraInfoFromEnoviaPreaFromPdef("A-0111 00");
+        extraInfoFromEnoviaPartDto2.setExtraInfoFromEnoviaPdefFromPrea("YYYYYYY 9811223380 02");
+        extraInfoFromEnoviaPartDto2.setExtraInfoFromEnoviaPdefBomAssembly("true");
+        extraInfoFromEnoviaPartDto2.setExtraInfoFromEnoviaPdefBomAssembly("true");
+        partNumber2.setExtraInfoFromEnoviaPartDto(extraInfoFromEnoviaPartDto2);
 
         // bom usages list
         List<UpstreamResponseBomUsagesDto> bomUsages = new ArrayList<>();
@@ -124,13 +141,17 @@ public class ExcelService {
         vomList.add(vom1);
         vomList.add(vom2);
         extraInfoFromEnoviaBOMUsageDto.setExtraInfoFromEnoviaVOMList(vomList);
+        extraInfoFromEnoviaBOMUsageDto2.setExtraInfoFromEnoviaVOMList(vomList);
+
         bomUsage1.setExtraInfoFromEnoviaBOMUsage(extraInfoFromEnoviaBOMUsageDto);
         bomUsage2.setExtraInfoFromEnoviaBOMUsage(extraInfoFromEnoviaBOMUsageDto2); // NO VOM 
+
         bomUsages.add(bomUsage1);
         bomUsages.add(bomUsage2);
 
-
         partNumber1.setBomUsages(bomUsages);
+
+        partNumber2.setBomUsages(bomUsages);
 
         partNumberList.add(partNumber1);
         partNumberList.add(partNumber2);
@@ -138,17 +159,21 @@ public class ExcelService {
 
         wb = writeSheet3CleanEz(wb, mock);
 
-        // return saveWorkbook(, "C:\\Workspace\\cddd\\generated.xlsx");
-        return saveWorkbook(wb, "E:\\Workspace\\generation\\generated.xlsx");
+        return saveWorkbook(wb, "C:\\Workspace\\cddd\\generated.xlsx");
+        // return saveWorkbook(wb, "E:\\Workspace\\generation\\generated.xlsx");
     }
 
 
     private Workbook writeSheet3CleanEz(Workbook wb, UpstreamResponseDto upstreamResponseDto) {
-        Sheet sheet = wb.createSheet("sheet4");
+        Sheet sheet = wb.getSheet("sheet3");
         List<Integer> partNumberColumns = Arrays.asList(0,1,2,3,4,5,6,7,8,9);
-        List<Integer> bomUsageColumns = Arrays.asList(11,12); // Assuming these columns for BOM usages
-    
-        int currentRow = 0;
+        List<Integer> bomUsageColumns = Arrays.asList(11,12,13,14);
+        List<Integer> extraMergeColumns = Arrays.asList(18, 19, 20, 21); // part of partNumber but are placed at the end
+
+        Integer columnKIndex = 10; // column K is static and must be empty
+
+        // Template reserved 2 first rows for header stuff so start at 2 ( index 0 ) instead of 0
+        int currentRow = 2; // start at row 3
     
         for (UpstreamResponsePartNumberDto partNumber : upstreamResponseDto.getPartNumberList()) {
             
@@ -159,9 +184,17 @@ public class ExcelService {
                 row.createCell(column);
             }
             
-            row.getCell(0).setCellValue(partNumber.getPartNumber());
-            row.getCell(1).setCellValue(partNumber.getBomSystem());
-            // TODO: other part number fields
+            row.getCell(0).setCellValue(partNumber != null ? partNumber.getPartNumber() : "");
+            row.getCell(1).setCellValue(partNumber != null && partNumber.getExtraInfoFromEnoviaPartDto() != null ? partNumber.getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaIndexPsa() : "");
+            row.getCell(2).setCellValue(partNumber != null ? partNumber.getSystemCreator() : "");
+            row.getCell(3).setCellValue(partNumber != null ? partNumber.getLocalPrimaryDesignation() : "");
+            row.getCell(4).setCellValue(partNumber != null ? partNumber.getLocalSecondaryDesignation() : "");
+            row.getCell(5).setCellValue(partNumber != null && partNumber.getExtraInfoFromEnoviaPartDto() != null ? partNumber.getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaPartType() : "");
+            row.getCell(6).setCellValue(partNumber != null && partNumber.getExtraInfoFromEnoviaPartDto() != null ? partNumber.getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaPartName() : "");
+            row.getCell(7).setCellValue(partNumber != null && partNumber.getExtraInfoFromEnoviaPartDto() != null ? partNumber.getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaPartRevision() : "");
+            row.getCell(8).setCellValue(partNumber != null && partNumber.getExtraInfoFromEnoviaPartDto() != null ? partNumber.getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaDecPSA() : "");
+            row.getCell(9).setCellValue(partNumber != null && partNumber.getExtraInfoFromEnoviaPartDto() != null ? partNumber.getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaProductNature() : "");
+            
     
             if (partNumber.getBomUsages() != null && !partNumber.getBomUsages().isEmpty()) {
                 
@@ -175,7 +208,9 @@ public class ExcelService {
     
                     row.createCell(11).setCellValue(bomUsage.getCode());
                     row.createCell(12).setCellValue(bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaProductLineName());
-    
+                    row.createCell(13).setCellValue(bomUsage.getDescription());
+                    row.createCell(14).setCellValue(bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaBOC());
+
                     // VOM usages
                     if (bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaVOMList() != null &&
                         !bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaVOMList().isEmpty()) {
@@ -186,8 +221,16 @@ public class ExcelService {
                                 row = sheet.createRow(currentRow);
                             }
     
-                            row.createCell(14).setCellValue(vomUsage.getExtraInfoFromEnoviaVOMName());
-                            row.createCell(15).setCellValue(vomUsage.getExtraInfoFromEnoviaVOMDescription());
+                            row.createCell(15).setCellValue(vomUsage.getExtraInfoFromEnoviaVOMName());
+                            row.createCell(16).setCellValue(vomUsage.getExtraInfoFromEnoviaVOMDescription());
+                            row.createCell(17).setCellValue(vomUsage.getExtraInfoFromEnoviaVOMPlantName());
+
+                            row.createCell(18).setCellValue(partNumber.getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaPdefFromPrea() != null ? partNumber.getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaPdefFromPrea() : "");
+                            row.createCell(19).setCellValue(partNumber.getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaPreaFromPdef() != null ? partNumber.getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaPreaFromPdef() : "");
+                            
+                            row.createCell(20).setCellValue(partNumber.getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaPdefBomAssembly() != null && "true".equals(partNumber.getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaPdefBomAssembly()) ? "Y" : "N");
+                            row.createCell(21).setCellValue(partNumber.getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaPdefBomComponent() != null && "true".equals(partNumber.getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaPdefBomComponent()) ? "Y" : "N");;
+
                             
                             currentRow++;
                         }
@@ -212,116 +255,69 @@ public class ExcelService {
                     sheet.addMergedRegion(new CellRangeAddress(partNumberStartRow, currentRow - 1, column, column));
                 }
             }
-        }
-    
-        return wb;
-    }
-    
-
-    private Workbook writeSheet3Clean(Workbook wb, UpstreamResponseDto upstreamResponseDto) {
-        // Assuming sheet already exists at index 0. Otherwise, create a new one.
-        Sheet sheet = wb.createSheet("sheet4");
-
-        List<Integer> partNumberColumns = Arrays.asList(0,1,2,3,4,5,6,7,8,9);
-        List<Integer> bomUsageColumns = Arrays.asList(11,12,13,14);
-
-        int currentRow = 0;
-
-        for ( int i = 0; i < upstreamResponseDto.getPartNumberList().size(); i++) {
-           
-            System.out.println("Part number row " + currentRow); 
-            Row row = sheet.createRow(currentRow);
-
-            partNumberColumns.forEach( column -> {
-                row.createCell(column);
-            });
-
-            bomUsageColumns.forEach( column -> {
-                row.createCell(column);
-            });
-
-            UpstreamResponsePartNumberDto partNumber = upstreamResponseDto.getPartNumberList().get(i);
-            row.getCell(0).setCellValue(partNumber.getPartNumber());
-            row.getCell(1).setCellValue(partNumber.getBomSystem());
-            // TODO other field part number
-
-            if (partNumber.getBomUsages() != null) {
-                if ( !partNumber.getBomUsages().isEmpty() ) {
-
-                    // BOM USAGES
-                    int countExtraRowAdded = 0;
-                    for ( int x = 0; x < partNumber.getBomUsages().size(); x++ ) {
-                        // logic is we add one row for each bom usage, also means, we need to "pad" the extra line in part number side ( merge cells )
-                        UpstreamResponseBomUsagesDto bomUsage = partNumber.getBomUsages().get(x);
-                        
-                        if ( sheet.getRow(currentRow) == null ) {
-                            Row newRow = sheet.createRow(currentRow);
-                            countExtraRowAdded++;
-                            System.out.println("bom usage create new row " + currentRow);
-                            newRow.createCell(11);
-                            newRow.createCell(12);
-                            // TODO continue
-                        }
-
-                        System.out.println("--- bom usage row " + currentRow + " : " + bomUsage.getCode());
-                        sheet.getRow(currentRow).getCell(11).setCellValue(bomUsage.getCode());
-                        sheet.getRow(currentRow).getCell(12).setCellValue(bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaProductLineName());
-                            // TODO continue
-
-                        // VOM
-                        if ( bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaVOMList() != null ) {
-
-                            if ( !bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaVOMList().isEmpty() ) {
-                                
-                                for ( int v = 0; v < bomUsage.getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaVOMList().size(); v++ ) {
-                                    System.out.println("----- VOM usage row" + currentRow);
-                                    UpstreamResponseExtraInfoFromEnoviaVOMDto vomUsage = partNumber.getBomUsages().get(x).getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaVOMList().get(v);
-                                    
-                                    if ( sheet.getRow(currentRow) == null ) {
-                                        Row newRow = sheet.createRow(currentRow);
-                                        countExtraRowAdded++;
-                                        System.out.println("VOM usage create new row " + currentRow);
-                                        newRow.createCell(14);
-                                        newRow.createCell(15);
-                                        // TODO continue
-                                    }
-                                    System.out.println("----- VOM usage row " + currentRow + " : " + vomUsage.getExtraInfoFromEnoviaVOMName());
-
-                                    sheet.getRow(currentRow).getCell(14).setCellValue(vomUsage.getExtraInfoFromEnoviaVOMName());
-                                    sheet.getRow(currentRow).getCell(15).setCellValue(vomUsage.getExtraInfoFromEnoviaVOMDescription());
-
-                                    // TODO
-                                }
-
-                            }
-                        }
-
-                        currentRow++;
-                    }
-
-                    //TODO à la fin on merge cellule pour vom / puis pour bom usage / puis part number
-                    // Merge part number section with extra row added by bom usage
-                    // if ( countExtraRowAdded != 0 ) {
-                    //     for ( int y = 0; y < partNumberColumns.size(); y++) {
-                    //         sheet.addMergedRegion(new CellRangeAddress(i, i + countExtraRowAdded, y, y));
-                    //     }
-                    // }
-
+            if (partNumberStartRow < currentRow - 1) {
+                for (int column : extraMergeColumns) {
+                    sheet.addMergedRegion(new CellRangeAddress(partNumberStartRow, currentRow - 1, column, column));
                 }
             }
-
-            // currentRow++;
-
-            
         }
-    
 
+        unmergeAllInColumn(sheet, columnKIndex); // 10 is index of column K ( static column must be empty )
+        mergeColumnFromRow(sheet, columnKIndex, 0); // Starts merging from row index 2 (third row in the sheet) for column K
+
+        // style for column K
+        CellStyle grayStyle = wb.createCellStyle();
+        grayStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        grayStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        grayStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+
+
+        Font bigFont = wb.createFont();
+        bigFont.setFontHeightInPoints((short) 14);  // Adjust the font size as required
+        grayStyle.setFont(bigFont);
+        grayStyle.setRotation((short) 90);  // For vertical text orientation
+
+        Row row = sheet.getRow(0);  // Assuming the merged region starts at row 2 (0-based index)
+        if (row == null) {
+            row = sheet.createRow(0);
+        }
+        Cell cell = row.getCell(10, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);  // 10 is column K (0-based index)
+        cell.setCellValue("To the left is static");
+        cell.setCellStyle(grayStyle);
 
         return wb;
     }
+
+    private void mergeColumnFromRow(Sheet sheet, int columnIndex, int startRow) {
+        int lastRow = sheet.getLastRowNum(); // Gets the last row index that has data
+        if (lastRow >= startRow) { // Check to ensure there's data to merge
+            CellRangeAddress mergeRegion = new CellRangeAddress(startRow, lastRow, columnIndex, columnIndex);
+            sheet.addMergedRegion(mergeRegion);
+        }
+    }
+
+    private void unmergeAllInColumn(Sheet sheet, int columnIndex) {
+        List<CellRangeAddress> mergedRegionsInColumn = getMergedRegionsInColumn(sheet, columnIndex);
+        
+        // Since removing merged regions modifies the list, iterate in reverse
+        for (int i = mergedRegionsInColumn.size() - 1; i >= 0; i--) {
+            sheet.removeMergedRegion(mergedRegionsInColumn.get(i).getFirstRow());
+        }
+    }
     
-
-
+    private List<CellRangeAddress> getMergedRegionsInColumn(Sheet sheet, int columnIndex) {
+        List<CellRangeAddress> mergedRegionsInColumn = new ArrayList<>();
+    
+        for (int i = 0; i < sheet.getNumMergedRegions(); i++) {
+            CellRangeAddress mergedRegion = sheet.getMergedRegion(i);
+            if (mergedRegion.getFirstColumn() <= columnIndex && mergedRegion.getLastColumn() >= columnIndex) {
+                mergedRegionsInColumn.add(mergedRegion);
+            }
+        }
+    
+        return mergedRegionsInColumn;
+    }
+    
     // public FileOutputStream writeExcel() {
 
     //     // here we need to pass callback response
@@ -409,147 +405,6 @@ public class ExcelService {
         }
     }
     
-    public Workbook writeSheet3(Workbook wb, UpstreamResponseDto upstreamResponseDto) {
-        try {
-    
-            Sheet sheet = wb.getSheet("sheet3");
-
-            List<UpstreamResponsePartNumberDto> partNumbers = upstreamResponseDto.getPartNumberList();
-            List<List<UpstreamResponseBomUsagesDto>> bomUsages = partNumbers.stream().map( partNumber -> {
-                return partNumber.getBomUsages();
-            }).collect(Collectors.toList());
-    
-            int currentRowNum = 2; // 2 because header is 1 and we want to start at 2
-            int totalRows = 0;
-            Cell cellK = null;
-
-            for (int i = 0; i < partNumbers.size(); i++) {
-                Row row = sheet.createRow(currentRowNum);
-                
-                Cell cellA = row.createCell(0);
-                cellA.setCellValue(partNumbers.get(i).getPartNumber());
-    
-                Cell cellB = row.createCell(1);
-                cellB.setCellValue(partNumbers.get(i).getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaIndexPsa());
-    
-
-                Cell cellC = row.createCell(2);
-                cellC.setCellValue(partNumbers.get(i).getBomSystem());
-
-                Cell cellD = row.createCell(3);
-                cellD.setCellValue(partNumbers.get(i).getLocalPrimaryDesignation());
-
-                Cell cellE = row.createCell(4);
-                cellE.setCellValue(partNumbers.get(i).getLocalSecondaryDesignation());
-                
-                Cell cellF = row.createCell(5);
-                cellF.setCellValue(partNumbers.get(i).getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaPartType());
-
-                Cell cellG = row.createCell(6);
-                cellG.setCellValue("TODO ENOVIA ID ?");
-
-                Cell cellH = row.createCell(7);
-                cellH.setCellValue(partNumbers.get(i).getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaPartRevision());
-
-                Cell cellI = row.createCell(8);
-                cellI.setCellValue("TODO decoupage");
-
-                Cell cellJ = row.createCell(9);
-                cellJ.setCellValue(partNumbers.get(i).getExtraInfoFromEnoviaPartDto().getExtraInfoFromEnoviaProductNature());
-
-                cellK = row.createCell(10); // column for separator between 
-
-                Cell cellL = row.createCell(11);
-                cellL.setCellValue(bomUsages.get(i).get(0).getCode());
-                
-                Cell cellM = row.createCell(12);
-                cellM.setCellValue(bomUsages.get(i).get(0).getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaProductLineName());
-
-                Cell cellN = row.createCell(13);
-                cellN.setCellValue(bomUsages.get(i).get(0).getDescription());
-
-                Cell cellO = row.createCell(14);
-                cellO.setCellValue(bomUsages.get(i).get(0).getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaBOC());;
-
-                Cell cellP = row.createCell(15);
-                cellP.setCellValue(bomUsages.get(i).get(0).getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaVOMList().get(0).getExtraInfoFromEnoviaVOMName());
-
-                for (int j = 1; j < bomUsages.get(i).size(); j++) {
-                    totalRows += bomUsages.get(i).size();
-
-                    currentRowNum++; 
-                    Row valueRow = sheet.createRow(currentRowNum);
-                    
-
-                    Cell valueCellL = valueRow.createCell(11);
-                    valueCellL.setCellValue(bomUsages.get(i).get(j).getCode());
-                    sheet.autoSizeColumn(11, false);
-
-                    Cell valueCellM = valueRow.createCell(12);
-                    valueCellM.setCellValue(bomUsages.get(i).get(j).getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaProductLineName());
-                    sheet.autoSizeColumn(12, false);
-
-                    Cell valueCellN = valueRow.createCell(13);
-                    valueCellN.setCellValue(bomUsages.get(i).get(j).getDescription());
-                    sheet.autoSizeColumn(13, false);
-
-                    Cell valueCellO = valueRow.createCell(14);
-                    valueCellO.setCellValue(bomUsages.get(i).get(j).getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaBOC());
-                    sheet.autoSizeColumn(14, false);
-
-                    for ( int x = 0; x < bomUsages.get(i).get(j).getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaVOMList().size(); x++) {
-                        System.out.println(bomUsages.get(i).get(j).getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaVOMList().get(x).getExtraInfoFromEnoviaVOMName());
-                        Cell valueCellP = valueRow.createCell(15);
-                        valueCellP.setCellValue(bomUsages.get(i).get(j).getExtraInfoFromEnoviaBOMUsage().getExtraInfoFromEnoviaVOMList().get(x).getExtraInfoFromEnoviaVOMName());
-                        sheet.autoSizeColumn(15, false);
-                    }
-                    
-                    
-                }
-                
-                if (bomUsages.get(i).size() > 1) {
-    
-                    // 10 first columns will be merged
-                    for ( int y=0; y<10;y++) {
-                        sheet.addMergedRegion(new CellRangeAddress(currentRowNum - bomUsages.get(i).size() + 1, currentRowNum, y, y));
-                    }                
-
-                }
-    
-                currentRowNum++;
-            }
-
-            if ( totalRows > 1 ) {
-                if ( cellK != null ) {
-                    CellStyle style = wb.createCellStyle();
-                    style.setAlignment(HorizontalAlignment.CENTER); // Center align horizontally
-                    style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex()); // Set gray background
-                    style.setFillPattern(FillPatternType.SOLID_FOREGROUND); // Specify fill pattern as solid
-                    style.setRotation((short) -90); // Rotate text to 45 degrees
-    
-                    sheet.addMergedRegion(new CellRangeAddress(0, totalRows - 1, 10, 10)); // Merging the entire column (assuming no header).
-                    cellK.setCellValue("To the left is static");
-                    cellK.setCellStyle(style);
-                }
-
-            }
-    
-            try (FileOutputStream fileOut = new FileOutputStream("C:\\Workspace\\cddd\\generated.xlsx")) {
-                wb.write(fileOut);
-            }
-    
-            return wb;
-    
-        } catch ( Exception e ) {
-            System.out.println(e.getMessage());
-            return wb;
-        }
-    }
-
-    // j'ai la réponse
-    // je fais une matrice tel que : [ [PartNumber.partNumber, ..., ] , [PartNumber.partNumber] ]
-    // chaque tableau represent une row entière
-    // Chaque corresponds à une partNumber
 
     public Workbook writeSheet1(Workbook wb) {
 
